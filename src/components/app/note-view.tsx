@@ -1,29 +1,30 @@
 "use client";
 
-import { Star } from "lucide-react";
+import Link from "next/link";
 import { useNote } from "@/hooks/useNote";
+import { useNotePath } from "@/hooks/useNotePath";
+import { NoteBreadcrumb } from "./note-breadcrumb";
+import { NoteEditor } from "./note-editor";
 
 export function NoteView({ noteId }: { noteId: string }) {
   const note = useNote(noteId);
+  const ancestors = useNotePath(note);
 
   if (!note) {
     return (
-      <div className="flex h-full items-center justify-center p-8 text-center text-sm text-muted-foreground">
-        Nota não encontrada.
+      <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
+        <p className="text-sm text-muted-foreground">Nota não encontrada.</p>
+        <Link href="/app" className="text-sm font-medium text-primary underline underline-offset-4">
+          Voltar para o Sinapse
+        </Link>
       </div>
     );
   }
 
   return (
     <div className="mx-auto flex h-full max-w-3xl flex-col gap-4 px-6 py-10">
-      <div className="flex items-center gap-2">
-        {note.favorite && <Star className="h-4 w-4 shrink-0 fill-current text-amber-500" />}
-        <h1 className="text-3xl font-semibold tracking-tight">{note.title || "Sem título"}</h1>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Atualizado em {new Date(note.updatedAt).toLocaleString("pt-BR")}
-      </p>
-      <p className="text-sm text-muted-foreground">O editor de blocos será adicionado em breve.</p>
+      <NoteBreadcrumb note={note} ancestors={ancestors ?? []} />
+      <NoteEditor key={note.id} note={note} />
     </div>
   );
 }
