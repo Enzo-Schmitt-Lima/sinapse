@@ -1,6 +1,7 @@
 import { nanoid } from "nanoid";
 import type { PartialBlock } from "@blocknote/core";
 import { db, type Note } from "./db";
+import { buildSnippet, extractPlainText } from "./note-content";
 
 export interface CreateNoteInput {
   title?: string;
@@ -79,4 +80,35 @@ export async function searchNotes(query: string, limit = 8): Promise<Note[]> {
   }
   const matches = await db.notes.filter((note) => note.title.toLowerCase().includes(trimmed)).toArray();
   return matches.sort((a, b) => a.title.localeCompare(b.title, "pt-BR")).slice(0, limit);
+}
+
+export interface NoteSearchResult {
+  note: Note;
+  snippet?: string;
+}
+
+// Busca por título e pelo texto do conteúdo (não indexado, varre as notas).
+// Adequado para um app local com poucas centenas de notas.
+export async function searchAllNotes(query: string, limit = 20): Promise<NoteSearchResult[]> {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) return [];
+
+  const notes = await db.notes.toArray();
+  const titleMatches: NoteSearchResult[] = [];
+  const contentMatches: NoteSearchResult[] = [];
+
+  for (const note of notes) {
+    if (note.title.toLowerCase().includes(trimmed)) {
+      titleMatches.push({ note });
+      continue;
+    }
+    const text = extractPlainText(note.content);
+    const index = text.toLowerCase().indexOf(trimmed);
+    if (index !== -1) {
+      contentMatches.push({ note, snippet: buildSnippet(text, index, trimmed.length) });
+    }
+  }
+
+  const sortByRecency = (a: NoteSearchResult, b: NoteSearchResult) => b.note.updatedAt - a.note.updatedAt;
+  return [...titleMatches.sort(sortByRecency), ...contentMatches.sort(sortByRecency)].slice(0, limit);
 }

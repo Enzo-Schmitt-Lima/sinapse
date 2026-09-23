@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { NoteTreeItem } from "./note-tree-item";
 import { NewFolderDialog } from "./new-folder-dialog";
 import { ThemeToggle } from "./theme-toggle";
+import { ShortcutsDialog } from "./shortcuts-dialog";
 
 interface SidebarContentProps {
   onNavigate?: () => void;
@@ -134,7 +135,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
 
       <Separator />
       <div className="flex items-center justify-between p-3">
-        <span className="text-xs text-muted-foreground">Tema</span>
+        <ShortcutsDialog />
         <ThemeToggle />
       </div>
 

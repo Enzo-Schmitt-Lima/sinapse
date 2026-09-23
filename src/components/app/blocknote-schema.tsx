@@ -1,6 +1,6 @@
 "use client";
 
-import { BlockNoteSchema, defaultInlineContentSpecs } from "@blocknote/core";
+import { BlockNoteEditor, BlockNoteSchema, defaultInlineContentSpecs, type PartialBlock } from "@blocknote/core";
 import { createReactInlineContentSpec } from "@blocknote/react";
 import { NOTE_LINK_TYPE } from "@/lib/note-links";
 import { NoteLinkChip } from "./note-link-chip";
@@ -27,3 +27,9 @@ export const noteSchema = BlockNoteSchema.create({
     [NOTE_LINK_TYPE]: noteLink,
   },
 });
+
+// Editor headless (sem montar UI) só para conversões, ex.: exportar Markdown.
+export function blocksToMarkdown(blocks: PartialBlock[]): string {
+  const editor = BlockNoteEditor.create({ schema: noteSchema });
+  return editor.blocksToMarkdownLossy(blocks);
+}

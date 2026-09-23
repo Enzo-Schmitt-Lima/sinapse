@@ -3,10 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
+import { FileDown, MoreHorizontal, Star } from "lucide-react";
 import type { PartialBlock } from "@blocknote/core";
 import type { Note } from "@/lib/db";
-import { updateNote, type NotePatch } from "@/lib/notes";
+import { toggleFavorite, updateNote, type NotePatch } from "@/lib/notes";
 import { extractNoteLinks } from "@/lib/note-links";
+import { downloadMarkdown, sanitizeFilename } from "@/lib/markdown";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const BlockNoteEditor = dynamic(
   () => import("./blocknote-editor").then((mod) => mod.BlockNoteEditor),
@@ -48,9 +58,17 @@ export function NoteEditor({ note }: NoteEditorProps) {
     };
   }, [note.id]);
 
+  async function handleExportMarkdown() {
+    // Import dinâmico: o schema do BlockNote não deve entrar no bundle
+    // carregado eagerly (mesma regra do editor: só client, sob demanda).
+    const { blocksToMarkdown } = await import("./blocknote-schema");
+    const markdown = blocksToMarkdown(note.content);
+    downloadMarkdown(`${sanitizeFilename(note.title)}.md`, markdown);
+  }
+
   return (
     <div className="flex flex-1 flex-col gap-3">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-1">
         <input
           value={title}
           onChange={(event) => {
@@ -61,9 +79,32 @@ export function NoteEditor({ note }: NoteEditorProps) {
           aria-label="Título da nota"
           className="w-full rounded-sm bg-transparent text-3xl font-semibold tracking-tight outline-none placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-ring"
         />
-        <span className="mt-2 shrink-0 text-xs text-muted-foreground">
-          {status === "saving" ? "Salvando…" : "Salvo"}
-        </span>
+
+        <div className="mt-1 flex shrink-0 items-center gap-1">
+          <span className="mr-1 text-xs text-muted-foreground">{status === "saving" ? "Salvando…" : "Salvo"}</span>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={note.favorite ? "Remover dos favoritos" : "Favoritar"}
+            onClick={() => toggleFavorite(note.id)}
+          >
+            <Star className={cn("h-4 w-4", note.favorite && "fill-current text-amber-500")} />
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Mais opções da nota">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={handleExportMarkdown}>
+                <FileDown /> Exportar como Markdown
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       <BlockNoteEditor
