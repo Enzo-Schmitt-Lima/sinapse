@@ -47,10 +47,14 @@ export async function updateNote(id: string, patch: NotePatch): Promise<void> {
   await db.notes.put({ ...existing, ...patch, updatedAt: Date.now() });
 }
 
-export async function deleteNote(id: string): Promise<void> {
+// Retorna os ids de todas as notas excluídas (a nota + subpáginas em
+// qualquer profundidade), para que quem chamou saiba se precisa navegar
+// para fora de uma nota que acabou de ser removida.
+export async function deleteNote(id: string): Promise<string[]> {
   const children = await db.notes.where("parentId").equals(id).toArray();
-  await Promise.all(children.map((child) => deleteNote(child.id)));
+  const deletedDescendantIds = await Promise.all(children.map((child) => deleteNote(child.id)));
   await db.notes.delete(id);
+  return [id, ...deletedDescendantIds.flat()];
 }
 
 export async function toggleFavorite(id: string): Promise<void> {
