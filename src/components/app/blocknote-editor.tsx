@@ -1,7 +1,13 @@
 "use client";
 
 import { FileText, Plus } from "lucide-react";
-import { SuggestionMenuController, useCreateBlockNote, type DefaultReactSuggestionItem } from "@blocknote/react";
+import {
+  SuggestionMenuController,
+  useComponentsContext,
+  useCreateBlockNote,
+  type DefaultReactSuggestionItem,
+  type SuggestionMenuProps,
+} from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/shadcn";
 import { pt } from "@blocknote/core/locales";
 import type { PartialBlock } from "@blocknote/core";
@@ -46,6 +52,43 @@ async function getNoteLinkItems(
   }));
 }
 
+// Menu de sugestão próprio (em vez do padrão do BlockNote) porque o renderer
+// padrão usa item.title como key da lista — com dois "Sem título" ele gera
+// aviso de key duplicada no React. Aqui a key é o índice, sempre único.
+function NoteLinkSuggestionMenu({
+  items,
+  loadingState,
+  selectedIndex,
+  onItemClick,
+}: SuggestionMenuProps<DefaultReactSuggestionItem>) {
+  const components = useComponentsContext();
+  if (!components) return null;
+  const { SuggestionMenu } = components;
+
+  return (
+    <SuggestionMenu.Root id="bn-suggestion-menu" className="bn-suggestion-menu">
+      {(loadingState === "loading-initial" || loadingState === "loading") && (
+        <SuggestionMenu.Loader className="bn-suggestion-menu-loader" />
+      )}
+      {items.map((item, index) => (
+        <SuggestionMenu.Item
+          key={index}
+          className="bn-suggestion-menu-item"
+          item={item}
+          id={`bn-suggestion-menu-item-${index}`}
+          isSelected={index === selectedIndex}
+          onClick={() => onItemClick?.(item)}
+        />
+      ))}
+      {items.length === 0 && (loadingState === "loading" || loadingState === "loaded") && (
+        <SuggestionMenu.EmptyItem className="bn-suggestion-menu-item">
+          Nenhuma nota encontrada
+        </SuggestionMenu.EmptyItem>
+      )}
+    </SuggestionMenu.Root>
+  );
+}
+
 interface BlockNoteEditorProps {
   initialContent: PartialBlock[];
   onChange: (content: PartialBlock[]) => void;
@@ -67,7 +110,11 @@ export function BlockNoteEditor({ initialContent, onChange, theme }: BlockNoteEd
       // guardamos o conteúdo das notas como PartialBlock[] genérico.
       onChange={() => onChange(editor.document as PartialBlock[])}
     >
-      <SuggestionMenuController triggerCharacter="[[" getItems={(query) => getNoteLinkItems(editor, query)} />
+      <SuggestionMenuController
+        triggerCharacter="[["
+        getItems={(query) => getNoteLinkItems(editor, query)}
+        suggestionMenuComponent={NoteLinkSuggestionMenu}
+      />
     </BlockNoteView>
   );
 }
