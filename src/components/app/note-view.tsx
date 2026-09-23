@@ -5,6 +5,7 @@ import { useNote } from "@/hooks/useNote";
 import { useNotePath } from "@/hooks/useNotePath";
 import { NoteBreadcrumb } from "./note-breadcrumb";
 import { NoteEditor } from "./note-editor";
+import { NoteBacklinks } from "./note-backlinks";
 
 export function NoteView({ noteId }: { noteId: string }) {
   const note = useNote(noteId);
@@ -25,6 +26,7 @@ export function NoteView({ noteId }: { noteId: string }) {
     <div className="mx-auto flex h-full max-w-3xl flex-col gap-4 px-6 py-10">
       <NoteBreadcrumb note={note} ancestors={ancestors ?? []} />
       <NoteEditor key={note.id} note={note} />
+      <NoteBacklinks noteId={note.id} />
     </div>
   );
 }

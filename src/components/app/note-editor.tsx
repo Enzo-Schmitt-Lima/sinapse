@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 import type { PartialBlock } from "@blocknote/core";
 import type { Note } from "@/lib/db";
 import { updateNote, type NotePatch } from "@/lib/notes";
+import { extractNoteLinks } from "@/lib/note-links";
 
 const BlockNoteEditor = dynamic(
   () => import("./blocknote-editor").then((mod) => mod.BlockNoteEditor),
@@ -68,7 +69,7 @@ export function NoteEditor({ note }: NoteEditorProps) {
       <BlockNoteEditor
         initialContent={note.content}
         theme={resolvedTheme === "dark" ? "dark" : "light"}
-        onChange={(content: PartialBlock[]) => scheduleSave({ content })}
+        onChange={(content: PartialBlock[]) => scheduleSave({ content, links: extractNoteLinks(content) })}
       />
     </div>
   );

@@ -71,3 +71,12 @@ export async function listFolders(): Promise<string[]> {
   const keys = await db.notes.orderBy("folder").uniqueKeys();
   return keys.filter((key): key is string => typeof key === "string");
 }
+
+export async function searchNotes(query: string, limit = 8): Promise<Note[]> {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) {
+    return db.notes.orderBy("updatedAt").reverse().limit(limit).toArray();
+  }
+  const matches = await db.notes.filter((note) => note.title.toLowerCase().includes(trimmed)).toArray();
+  return matches.sort((a, b) => a.title.localeCompare(b.title, "pt-BR")).slice(0, limit);
+}
