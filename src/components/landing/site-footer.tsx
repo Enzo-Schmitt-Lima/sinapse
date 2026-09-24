@@ -1,7 +1,6 @@
 import { Logo } from "./logo";
 
-// TODO: trocar pelo endereço real do repositório.
-const GITHUB_URL = "https://github.com/seu-usuario/sinapse";
+const GITHUB_URL = "https://github.com/Enzo-Schmitt-Lima/sinapse";
 
 function GithubIcon({ className }: { className?: string }) {
   return (

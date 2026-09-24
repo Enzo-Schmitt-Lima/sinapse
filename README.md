@@ -39,7 +39,7 @@ Sinapse é um caderno digital para estudantes de ensino técnico e superior. Ele
 Pré-requisitos: Node.js 20+ e npm.
 
 ```bash
-git clone <url-do-repositorio> sinapse
+git clone https://github.com/Enzo-Schmitt-Lima/sinapse.git
 cd sinapse
 npm install
 npm run dev
