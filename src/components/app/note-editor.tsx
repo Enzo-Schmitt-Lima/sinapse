@@ -30,7 +30,7 @@ interface NoteEditorProps {
 export function NoteEditor({ note }: NoteEditorProps) {
   const { resolvedTheme } = useTheme();
   const [title, setTitle] = useState(note.title);
-  const [status, setStatus] = useState<"saved" | "saving">("saved");
+  const [status, setStatus] = useState<"saved" | "saving" | "error">("saved");
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingRef = useRef<NotePatch>({});
 
@@ -42,7 +42,15 @@ export function NoteEditor({ note }: NoteEditorProps) {
       const toSave = pendingRef.current;
       pendingRef.current = {};
       timeoutRef.current = null;
-      updateNote(note.id, toSave).then(() => setStatus("saved"));
+      updateNote(note.id, toSave).then(
+        () => setStatus("saved"),
+        (error: unknown) => {
+          // Mantém o que falhou para tentar de novo na próxima alteração.
+          pendingRef.current = { ...toSave, ...pendingRef.current };
+          setStatus("error");
+          reportError(error);
+        },
+      );
     }, 500);
   }
 
@@ -52,7 +60,7 @@ export function NoteEditor({ note }: NoteEditorProps) {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         if (Object.keys(pendingRef.current).length > 0) {
-          updateNote(note.id, pendingRef.current);
+          updateNote(note.id, pendingRef.current).catch(reportError);
         }
       }
     };
@@ -62,8 +70,9 @@ export function NoteEditor({ note }: NoteEditorProps) {
     // Import dinâmico: o schema do BlockNote não deve entrar no bundle
     // carregado eagerly (mesma regra do editor: só client, sob demanda).
     const { blocksToMarkdown } = await import("./blocknote-schema");
-    const markdown = blocksToMarkdown(note.content);
-    downloadMarkdown(`${sanitizeFilename(note.title)}.md`, markdown);
+    // Usa também o que ainda está no debounce, para exportar o que está na tela.
+    const markdown = blocksToMarkdown(pendingRef.current.content ?? note.content);
+    downloadMarkdown(`${sanitizeFilename(title)}.md`, markdown);
   }
 
   return (
@@ -77,19 +86,26 @@ export function NoteEditor({ note }: NoteEditorProps) {
           }}
           placeholder="Sem título"
           aria-label="Título da nota"
-          className="w-full rounded-sm bg-transparent text-3xl font-semibold tracking-tight outline-none placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-ring"
+          className="w-full min-w-0 rounded-sm bg-transparent text-2xl sm:text-3xl font-semibold tracking-tight outline-none placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-ring"
         />
 
         <div className="mt-1 flex shrink-0 items-center gap-1">
-          <span className="mr-1 text-xs text-muted-foreground">{status === "saving" ? "Salvando…" : "Salvo"}</span>
+          <span
+            // Só anuncia ao leitor de tela quando der erro (evita ruído a cada tecla).
+            role={status === "error" ? "alert" : undefined}
+            className={cn("mr-1 text-xs", status === "error" ? "text-destructive" : "text-muted-foreground")}
+          >
+            {status === "saving" ? "Salvando…" : status === "error" ? "Erro ao salvar" : "Salvo"}
+          </span>
 
           <Button
             variant="ghost"
             size="icon"
-            aria-label={note.favorite ? "Remover dos favoritos" : "Favoritar"}
+            aria-label="Favoritar"
+            aria-pressed={note.favorite}
             onClick={() => toggleFavorite(note.id)}
           >
-            <Star className={cn("h-4 w-4", note.favorite && "fill-current text-amber-500")} />
+            <Star className={cn("h-4 w-4", note.favorite && "fill-current text-amber-500")} aria-hidden="true" />
           </Button>
 
           <DropdownMenu>

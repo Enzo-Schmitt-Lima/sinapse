@@ -22,7 +22,7 @@ export function SiteHeader() {
               <li key={link.href}>
                 <a
                   href={link.href}
-                  className="rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  className="rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring"
                 >
                   {link.label}
                 </a>

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { FolderPlus, Plus, Star } from "lucide-react";
+import { FolderPlus, Plus, Search, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Note } from "@/lib/db";
 import { useChildNotes } from "@/hooks/useChildNotes";
@@ -19,9 +19,20 @@ import { ShortcutsDialog } from "./shortcuts-dialog";
 
 interface SidebarContentProps {
   onNavigate?: () => void;
+  onOpenSearch: () => void;
 }
 
-export function SidebarContent({ onNavigate }: SidebarContentProps) {
+function SidebarSkeleton() {
+  return (
+    <div aria-hidden="true" className="space-y-2 px-2 py-1">
+      {[70, 55, 80, 45].map((width) => (
+        <div key={width} className="h-5 animate-pulse rounded bg-muted" style={{ width: `${width}%` }} />
+      ))}
+    </div>
+  );
+}
+
+export function SidebarContent({ onNavigate, onOpenSearch }: SidebarContentProps) {
   const params = useParams<{ noteId?: string }>();
   const activeId = typeof params.noteId === "string" ? params.noteId : undefined;
   const router = useRouter();
@@ -68,6 +79,18 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
         </Button>
       </div>
 
+      <div className="px-3 pb-3">
+        <button
+          type="button"
+          onClick={onOpenSearch}
+          className="flex w-full items-center gap-2 rounded-md border bg-background px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/50"
+        >
+          <Search className="h-3.5 w-3.5" aria-hidden="true" />
+          Buscar
+          <kbd className="ml-auto hidden font-mono text-[10px] md:inline">Ctrl K</kbd>
+        </button>
+      </div>
+
       <ScrollArea className="flex-1 px-2">
         {favorites && favorites.length > 0 && (
           <div className="mb-4">
@@ -80,11 +103,11 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                   onClick={onNavigate}
                   aria-current={note.id === activeId ? "page" : undefined}
                   className={cn(
-                    "flex items-center gap-1.5 truncate rounded-md px-2 py-1.5 text-sm",
+                    "flex items-center gap-1.5 truncate rounded-md px-2 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring md:py-1.5",
                     note.id === activeId ? "bg-accent text-accent-foreground" : "hover:bg-accent/50",
                   )}
                 >
-                  <Star className="h-3.5 w-3.5 shrink-0 fill-current text-amber-500" />
+                  <Star className="h-3.5 w-3.5 shrink-0 fill-current text-amber-500" aria-hidden="true" />
                   <span className="truncate">{note.title || "Sem título"}</span>
                 </Link>
               ))}
@@ -98,14 +121,16 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             <Button
               size="icon"
               variant="ghost"
-              className="h-5 w-5"
+              className="size-7 md:size-5"
               onClick={() => setNewFolderOpen(true)}
               aria-label="Nova matéria"
             >
               <FolderPlus className="h-3.5 w-3.5" />
             </Button>
           </div>
-          {folderGroups.length === 0 ? (
+          {rootNotes === undefined ? (
+            <SidebarSkeleton />
+          ) : folderGroups.length === 0 ? (
             <p className="px-2 py-1 text-xs text-muted-foreground">Nenhuma matéria ainda.</p>
           ) : (
             folderGroups.map(([folder, notes]) => (
@@ -123,7 +148,9 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
 
         <div className="mb-2">
           <p className="px-2 py-1 text-xs font-medium uppercase text-muted-foreground">Páginas</p>
-          {unfiled.length === 0 ? (
+          {rootNotes === undefined ? (
+            <SidebarSkeleton />
+          ) : unfiled.length === 0 ? (
             <p className="px-2 py-1 text-xs text-muted-foreground">Nenhuma página ainda.</p>
           ) : (
             unfiled.map((note) => (

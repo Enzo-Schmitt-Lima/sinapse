@@ -3,6 +3,15 @@ import type { PartialBlock } from "@blocknote/core";
 import { db, type Note } from "./db";
 import { buildSnippet, extractPlainText } from "./note-content";
 
+// Abre o banco explicitamente para detectar cedo navegadores sem IndexedDB
+// (ex.: modo privado) e mostrar uma mensagem amigável.
+export async function openDatabase(): Promise<void> {
+  if (typeof indexedDB === "undefined") {
+    throw Object.assign(new Error("IndexedDB indisponível"), { name: "MissingAPIError" });
+  }
+  await db.open();
+}
+
 export interface CreateNoteInput {
   title?: string;
   parentId?: string | null;
@@ -62,10 +71,6 @@ export async function toggleFavorite(id: string): Promise<void> {
   const note = await db.notes.get(id);
   if (!note) return;
   await db.notes.put({ ...note, favorite: !note.favorite, updatedAt: Date.now() });
-}
-
-export async function getNote(id: string): Promise<Note | undefined> {
-  return db.notes.get(id);
 }
 
 export async function listFolders(): Promise<string[]> {

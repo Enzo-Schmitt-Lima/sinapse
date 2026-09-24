@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sinapse
 
-## Getting Started
+**Suas anotações, conectadas como o seu cérebro.**
 
-First, run the development server:
+Sinapse é um caderno digital para estudantes de ensino técnico e superior. Ele junta o editor em blocos do Notion com os links entre notas do Obsidian: você escreve em blocos, organiza por matéria e liga suas ideias com `[[links]]`. É grátis, não precisa de conta e as notas ficam no seu navegador.
+
+## Prints
+
+> Imagens ainda não adicionadas. Salve os prints em `docs/prints/` e troque os itens abaixo por `![descrição](docs/prints/arquivo.png)`.
+
+| Tela | Arquivo |
+| --- | --- |
+| Landing page | `docs/prints/landing.png` _(em breve)_ |
+| Editor com `[[links]]` e backlinks | `docs/prints/editor.png` _(em breve)_ |
+| Busca global (Ctrl+K) | `docs/prints/busca.png` _(em breve)_ |
+| Tema escuro no celular | `docs/prints/mobile-escuro.png` _(em breve)_ |
+
+## Recursos
+
+- **Editor em blocos** ([BlockNote](https://www.blocknotejs.org/)): títulos, listas, tarefas, código, tabelas e menu `/` em português.
+- **Links entre notas** com `[[` e painel de **backlinks**.
+- **Matérias e subpáginas** na barra lateral, com favoritos.
+- **Busca global** (`Ctrl/⌘ + K`) por título e conteúdo.
+- **Exportar como Markdown** (`.md`).
+- **Tema claro/escuro** e layout responsivo.
+- **Sem servidor:** tudo fica salvo no IndexedDB do navegador.
+
+## Stack
+
+- [Next.js](https://nextjs.org/) (App Router) + TypeScript (strict)
+- [Tailwind CSS](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) + [lucide-react](https://lucide.dev/)
+- [BlockNote](https://www.blocknotejs.org/): editor em blocos
+- [Dexie](https://dexie.org/): persistência em IndexedDB
+- [next-themes](https://github.com/pacocoursey/next-themes): tema claro/escuro
+- Deploy na [Vercel](https://vercel.com/)
+
+## Como rodar localmente
+
+Pré-requisitos: Node.js 20+ e npm.
 
 ```bash
+git clone <url-do-repositorio> sinapse
+cd sinapse
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abra [http://localhost:3000](http://localhost:3000) para ver a landing page e [http://localhost:3000/app](http://localhost:3000/app) para usar o app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Outros comandos:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Comando | O que faz |
+| --- | --- |
+| `npm run dev` | Servidor de desenvolvimento |
+| `npm run build` | Build de produção |
+| `npm run start` | Sobe o build de produção |
+| `npm run lint` | ESLint |
 
-## Learn More
+### Variáveis de ambiente (opcional)
 
-To learn more about Next.js, take a look at the following resources:
+| Variável | Uso |
+| --- | --- |
+| `NEXT_PUBLIC_SITE_URL` | URL pública do site, usada nas metatags Open Graph. Na Vercel, o domínio de produção é detectado automaticamente. |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Estrutura
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+  app/                  rotas (/, /app, /app/[noteId])
+  components/landing/   seções da landing page
+  components/app/       sidebar, editor, backlinks, busca...
+  components/ui/        componentes shadcn/ui
+  hooks/                hooks de leitura (useLiveQuery)
+  lib/db.ts             schema do Dexie
+  lib/notes.ts          CRUD e regras de negócio das notas
+```
 
-## Deploy on Vercel
+## Seus dados
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+As notas ficam **apenas no navegador e no dispositivo** onde foram criadas. Limpar os dados do site apaga as notas, então exporte as importantes em Markdown. Janelas anônimas ou navegadores que bloqueiam o armazenamento mostram um aviso em vez de abrir o app.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Roadmap
+
+- [x] **v1:** editor em blocos, matérias e subpáginas, `[[links]]` e backlinks, busca, favoritos, exportar Markdown, landing page
+- [ ] **v2:** login e sincronização entre dispositivos com banco na nuvem ([Neon](https://neon.tech/) + [Prisma](https://www.prisma.io/))
+- [ ] **v3:** flashcards gerados a partir das notas, Pomodoro integrado e visualização em grafo
+
+---
+
+Feito por Enzo.

@@ -86,11 +86,12 @@ export function NoteTreeItem({ note, activeId, depth = 0, onNavigate }: NoteTree
           type="button"
           onClick={() => setExpanded((value) => !value)}
           className={cn(
-            "flex h-6 w-6 shrink-0 items-center justify-center rounded hover:bg-accent",
+            "flex size-7 shrink-0 items-center justify-center rounded outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring md:size-6",
             !hasChildren && "invisible",
           )}
           tabIndex={hasChildren ? 0 : -1}
-          aria-label={expanded ? "Recolher subpáginas" : "Expandir subpáginas"}
+          aria-label={expanded ? `Recolher subpáginas de ${title}` : `Expandir subpáginas de ${title}`}
+          aria-expanded={hasChildren ? expanded : undefined}
         >
           {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
         </button>
@@ -98,12 +99,14 @@ export function NoteTreeItem({ note, activeId, depth = 0, onNavigate }: NoteTree
         <Link
           href={`/app/${note.id}`}
           onClick={onNavigate}
-          className="flex min-w-0 flex-1 items-center gap-1.5 py-1.5"
+          className="flex min-w-0 flex-1 items-center gap-1.5 rounded-sm py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring md:py-1.5"
           aria-current={isActive ? "page" : undefined}
         >
-          <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
           <span className="truncate">{title}</span>
-          {note.favorite && <Star className="h-3 w-3 shrink-0 fill-current text-amber-500" />}
+          {note.favorite && (
+            <Star className="h-3 w-3 shrink-0 fill-current text-amber-500" aria-label="Favorita" />
+          )}
         </Link>
 
         <DropdownMenu>
@@ -111,7 +114,7 @@ export function NoteTreeItem({ note, activeId, depth = 0, onNavigate }: NoteTree
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 shrink-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100"
+              className="size-7 shrink-0 group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100 md:size-6 [@media(hover:hover)]:opacity-0"
               aria-label={`Mais opções de ${title}`}
             >
               <MoreHorizontal className="h-3.5 w-3.5" />

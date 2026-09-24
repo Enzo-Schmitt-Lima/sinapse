@@ -19,13 +19,13 @@ export function NoteBreadcrumb({ note, ancestors }: NoteBreadcrumbProps) {
       )}
       {ancestors.map((ancestor) => (
         <span key={ancestor.id} className="flex items-center gap-1.5">
-          <Link href={`/app/${ancestor.id}`} className="hover:text-foreground hover:underline underline-offset-4">
+          <Link href={`/app/${ancestor.id}`} className="rounded-sm underline-offset-4 hover:text-foreground hover:underline">
             {ancestor.title || "Sem título"}
           </Link>
           <span aria-hidden="true">/</span>
         </span>
       ))}
-      <span className="truncate text-foreground">{note.title || "Sem título"}</span>
+      <span aria-current="page" className="truncate text-foreground">{note.title || "Sem título"}</span>
     </nav>
   );
 }

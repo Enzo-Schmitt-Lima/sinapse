@@ -1,30 +1,55 @@
 import type { PartialBlock } from "@blocknote/core";
 
-function collectTextFromInlineContent(content: unknown, parts: string[]) {
+type InlineItem = Record<string, unknown>;
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+// Percorre o conteúdo inline de um bloco: lista simples, links (que têm
+// `content` próprio) e tabelas (`tableContent` → linhas → células).
+function walkInlineContent(content: unknown, visit: (item: InlineItem | string) => void) {
   if (typeof content === "string") {
-    parts.push(content);
+    visit(content);
     return;
   }
-  if (!Array.isArray(content)) return;
-  for (const item of content) {
-    if (item && typeof item === "object" && typeof (item as { text?: unknown }).text === "string") {
-      parts.push((item as { text: string }).text);
+  if (Array.isArray(content)) {
+    for (const item of content) {
+      if (typeof item === "string") {
+        visit(item);
+      } else if (isObject(item)) {
+        visit(item);
+        if (item.type === "link") walkInlineContent(item.content, visit);
+      }
+    }
+    return;
+  }
+  if (isObject(content) && content.type === "tableContent" && Array.isArray(content.rows)) {
+    for (const row of content.rows) {
+      if (!isObject(row) || !Array.isArray(row.cells)) continue;
+      for (const cell of row.cells) {
+        walkInlineContent(isObject(cell) && !Array.isArray(cell) ? cell.content : cell, visit);
+      }
     }
   }
 }
 
-function collectTextFromBlocks(blocks: unknown, parts: string[]) {
+/** Chama `visit` para cada item inline de todos os blocos (incluindo filhos). */
+export function forEachInlineItem(blocks: unknown, visit: (item: InlineItem | string) => void) {
   if (!Array.isArray(blocks)) return;
   for (const block of blocks) {
-    if (!block || typeof block !== "object") continue;
-    collectTextFromInlineContent((block as { content?: unknown }).content, parts);
-    collectTextFromBlocks((block as { children?: unknown }).children, parts);
+    if (!isObject(block)) continue;
+    walkInlineContent(block.content, visit);
+    forEachInlineItem(block.children, visit);
   }
 }
 
 export function extractPlainText(blocks: PartialBlock[]): string {
   const parts: string[] = [];
-  collectTextFromBlocks(blocks, parts);
+  forEachInlineItem(blocks, (item) => {
+    if (typeof item === "string") parts.push(item);
+    else if (typeof item.text === "string") parts.push(item.text);
+  });
   return parts.join(" ").replace(/\s+/g, " ").trim();
 }
 

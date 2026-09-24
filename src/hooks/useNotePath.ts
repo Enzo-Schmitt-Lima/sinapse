@@ -3,7 +3,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type Note } from "@/lib/db";
 
-export function useNotePath(note: Note | undefined) {
+export function useNotePath(note: Note | null | undefined) {
   return useLiveQuery(async () => {
     if (!note) return [];
     const ancestors: Note[] = [];

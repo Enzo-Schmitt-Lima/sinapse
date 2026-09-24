@@ -8,8 +8,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { createNote, searchAllNotes, searchNotes, type NoteSearchResult } from "@/lib/notes";
 
-export function CommandPalette() {
-  const [open, setOpen] = useState(false);
+interface CommandPaletteProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function CommandPalette({ open, onOpenChange: setOpen }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<NoteSearchResult[]>([]);
   const router = useRouter();
@@ -25,7 +29,7 @@ export function CommandPalette() {
     setOpen(false);
     setQuery("");
     router.push(`/app/${note.id}`);
-  }, [router]);
+  }, [router, setOpen]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -40,16 +44,14 @@ export function CommandPalette() {
 
       if (withModifier && key === "k") {
         event.preventDefault();
-        setOpen((value) => {
-          if (value) setQuery("");
-          return !value;
-        });
+        if (open) setQuery("");
+        setOpen(!open);
       }
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleNewNote]);
+  }, [handleNewNote, open, setOpen]);
 
   useEffect(() => {
     if (!open) return;
@@ -77,11 +79,11 @@ export function CommandPalette() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogHeader className="sr-only">
-        <DialogTitle>Busca do Sinapse</DialogTitle>
-        <DialogDescription>Busque notas pelo título ou conteúdo, ou execute uma ação.</DialogDescription>
-      </DialogHeader>
       <DialogContent className="overflow-hidden p-0">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Busca do Sinapse</DialogTitle>
+          <DialogDescription>Busque notas pelo título ou conteúdo, ou execute uma ação.</DialogDescription>
+        </DialogHeader>
         <Command shouldFilter={false}>
           <CommandInput
             placeholder="Buscar notas ou executar uma ação..."

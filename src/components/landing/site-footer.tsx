@@ -28,7 +28,7 @@ export function SiteFooter() {
             href={GITHUB_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-md transition-colors outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="inline-flex items-center gap-1.5 rounded-md transition-colors outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring"
           >
             <GithubIcon className="size-4" />
             GitHub

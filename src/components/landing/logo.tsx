@@ -20,7 +20,7 @@ export function Logo({ className }: { className?: string }) {
     <Link
       href="/"
       className={cn(
-        "inline-flex items-center gap-2 rounded-md font-semibold tracking-tight outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+        "inline-flex items-center gap-2 rounded-md font-semibold tracking-tight outline-none focus-visible:ring-[3px] focus-visible:ring-ring",
         className,
       )}
     >

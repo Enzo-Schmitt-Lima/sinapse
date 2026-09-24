@@ -5,7 +5,8 @@ export function downloadMarkdown(filename: string, markdown: string) {
   link.href = url;
   link.download = filename;
   link.click();
-  URL.revokeObjectURL(url);
+  // Revogar na hora pode cancelar o download em alguns navegadores.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export function sanitizeFilename(name: string): string {

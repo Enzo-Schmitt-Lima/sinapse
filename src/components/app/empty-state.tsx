@@ -15,12 +15,12 @@ export function EmptyState() {
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
-      <FileText className="h-10 w-10 text-muted-foreground" />
+      <FileText className="h-10 w-10 text-muted-foreground" aria-hidden="true" />
       <div className="space-y-1">
-        <h2 className="text-lg font-medium">Nenhuma nota aberta</h2>
-        <p className="text-sm text-muted-foreground">Escolha uma nota na barra lateral ou crie a primeira.</p>
+        <h1 className="text-lg font-medium">Nenhuma nota aberta</h1>
+        <p className="text-sm text-muted-foreground">Escolha uma nota na barra lateral ou crie uma nova.</p>
       </div>
-      <Button onClick={handleCreate}>Criar primeira nota</Button>
+      <Button onClick={handleCreate}>Nova nota</Button>
     </div>
   );
 }

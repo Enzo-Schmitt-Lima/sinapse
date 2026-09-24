@@ -49,6 +49,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  // Recomendado pelo BlockNote: o teclado virtual redimensiona o conteúdo no celular.
+  interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
@@ -59,6 +61,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="pt-BR"
+      data-scroll-behavior="smooth"
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >

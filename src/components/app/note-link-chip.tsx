@@ -13,13 +13,27 @@ export function NoteLinkChip({ noteId, title }: NoteLinkChipProps) {
   const note = useNote(noteId);
   const label = (note ? note.title : title) || "Sem título";
 
-  if (!note) {
+  // Enquanto carrega, mostra o título salvo no próprio link (sem riscar).
+  if (note === undefined) {
     return (
       <span
         contentEditable={false}
+        className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 align-baseline text-sm font-medium text-primary"
+      >
+        <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+        {label}
+      </span>
+    );
+  }
+
+  if (note === null) {
+    return (
+      <span
+        contentEditable={false}
+        title="Esta nota foi excluída"
         className="inline-flex items-center gap-1 rounded-md border border-dashed px-1.5 py-0.5 align-baseline text-sm text-muted-foreground line-through"
       >
-        <FileText className="h-3.5 w-3.5" />
+        <FileText className="h-3.5 w-3.5" aria-hidden="true" />
         {label}
       </span>
     );
@@ -32,7 +46,7 @@ export function NoteLinkChip({ noteId, title }: NoteLinkChipProps) {
       onMouseDown={(event) => event.stopPropagation()}
       className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 align-baseline text-sm font-medium text-primary no-underline hover:bg-primary/20"
     >
-      <FileText className="h-3.5 w-3.5" />
+      <FileText className="h-3.5 w-3.5" aria-hidden="true" />
       {label}
     </Link>
   );
