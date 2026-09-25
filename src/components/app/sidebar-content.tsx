@@ -72,11 +72,8 @@ export function SidebarContent({ onNavigate, onOpenSearch }: SidebarContentProps
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between gap-2 p-3">
+      <div className="flex items-center gap-2 p-3">
         <span className="text-lg font-semibold tracking-tight">Sinapse</span>
-        <Button size="icon" variant="ghost" onClick={handleNewNote} aria-label="Nova nota">
-          <Plus className="h-4 w-4" />
-        </Button>
       </div>
 
       <div className="px-3 pb-3">
@@ -147,7 +144,18 @@ export function SidebarContent({ onNavigate, onOpenSearch }: SidebarContentProps
         <Separator className="my-2" />
 
         <div className="mb-2">
-          <p className="px-2 py-1 text-xs font-medium uppercase text-muted-foreground">Páginas</p>
+          <div className="flex items-center justify-between px-2 py-1">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Páginas</p>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="size-7 md:size-5"
+              onClick={handleNewNote}
+              aria-label="Nova página"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
           {rootNotes === undefined ? (
             <SidebarSkeleton />
           ) : unfiled.length === 0 ? (
