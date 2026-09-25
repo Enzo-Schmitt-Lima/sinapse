@@ -14,16 +14,51 @@ const UNAVAILABLE_ERRORS = new Set([
   "UnknownError",
 ]);
 
-function errorNames(error: unknown): string[] {
-  const names: string[] = [];
+interface ErrorLink {
+  name: string;
+  message: string;
+}
+
+/** Percorre o erro e os que ele embrulha (Dexie guarda o original em `inner`). */
+function errorChain(error: unknown): ErrorLink[] {
+  const chain: ErrorLink[] = [];
   let current: unknown = error;
-  // Dexie embrulha o erro original em `inner`.
-  while (current && typeof current === "object" && names.length < 5) {
-    const { name, inner } = current as { name?: unknown; inner?: unknown };
-    if (typeof name === "string") names.push(name);
+  while (current && typeof current === "object" && chain.length < 5) {
+    const { name, message, inner } = current as { name?: unknown; message?: unknown; inner?: unknown };
+    chain.push({
+      name: typeof name === "string" ? name : "Error",
+      message: typeof message === "string" ? message : "",
+    });
     current = inner;
   }
-  return names;
+  if (chain.length === 0 && error !== undefined) chain.push({ name: typeof error, message: String(error) });
+  return chain;
+}
+
+function errorNames(error: unknown): string[] {
+  return errorChain(error).map((link) => link.name);
+}
+
+/**
+ * Texto técnico para diagnóstico (mostrado recolhido na tela de erro),
+ * para o usuário poder mandar um print quando algo falhar.
+ */
+export function formatErrorDetails(error: unknown): string {
+  const lines = errorChain(error).map(({ name, message }) => (message ? `${name}: ${message}` : name));
+
+  const { digest, stack } = (error ?? {}) as { digest?: unknown; stack?: unknown };
+  if (typeof digest === "string") lines.push(`digest: ${digest}`);
+  if (typeof stack === "string") {
+    const frames = stack
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line && !lines.some((existing) => existing.endsWith(line)))
+      .slice(0, 6);
+    if (frames.length > 0) lines.push("", ...frames);
+  }
+  if (typeof navigator !== "undefined") lines.push("", navigator.userAgent);
+
+  return lines.join("\n");
 }
 
 export function describeDatabaseError(error: unknown): FriendlyError {
