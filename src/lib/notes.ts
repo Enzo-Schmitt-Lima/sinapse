@@ -74,8 +74,11 @@ export async function toggleFavorite(id: string): Promise<void> {
 }
 
 export async function listFolders(): Promise<string[]> {
-  const keys = await db.notes.orderBy("folder").uniqueKeys();
-  return keys.filter((key): key is string => typeof key === "string");
+  // Sem orderBy("folder").uniqueKeys(): no Safari/iOS o cursor "nextunique" falha
+  // com "UnknownError: Unable to open cursor" (principalmente com o índice vazio).
+  const notes = await db.notes.toArray();
+  const folders = new Set(notes.map((note) => note.folder).filter((folder): folder is string => !!folder));
+  return [...folders].sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
 
 export async function searchNotes(query: string, limit = 8): Promise<Note[]> {
