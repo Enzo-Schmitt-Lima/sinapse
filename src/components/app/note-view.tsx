@@ -35,7 +35,7 @@ export function NoteView({ noteId }: { noteId: string }) {
   }
 
   return (
-    <div className="mx-auto flex h-full max-w-3xl flex-col gap-4 px-4 py-6 sm:px-6 sm:py-10">
+    <div className="mx-auto flex min-h-full max-w-3xl flex-col gap-4 px-4 pb-24 pt-6 sm:px-6 sm:pb-32 sm:pt-10">
       <NoteBreadcrumb note={note} ancestors={ancestors ?? []} />
       <NoteEditor key={note.id} note={note} />
       <NoteBacklinks noteId={note.id} />
