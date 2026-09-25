@@ -146,14 +146,8 @@ export function SidebarContent({ onNavigate, onOpenSearch }: SidebarContentProps
         <div className="mb-2">
           <div className="flex items-center justify-between px-2 py-1">
             <p className="text-xs font-medium uppercase text-muted-foreground">Páginas</p>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="size-7 md:size-5"
-              onClick={handleNewNote}
-              aria-label="Nova página"
-            >
-              <Plus className="h-3.5 w-3.5" />
+            <Button size="icon" variant="ghost" className="cursor-pointer" onClick={handleNewNote} aria-label="Nova página">
+              <Plus className="h-4 w-4" />
             </Button>
           </div>
           {rootNotes === undefined ? (
