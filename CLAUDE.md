@@ -14,8 +14,8 @@ App web de notas para estudantes. Mistura Notion (editor em blocos, páginas e s
 
 ## Rotas
 - `/` → landing page (marketing, estática)
-- `/app` → app de notas (client-side)
-- `/app/[noteId]` → nota aberta
+- `/app` → app de notas (exige login; sem sessão, redireciona para o login)
+- `/app/[noteId]` → nota aberta (só do próprio usuário; caso contrário, 404)
 
 ## Estrutura de pastas
 - `src/app/` rotas
@@ -31,12 +31,18 @@ App web de notas para estudantes. Mistura Notion (editor em blocos, páginas e s
 - `src/server/notes.ts` funções de acesso às notas, todas recebendo o userId da sessão
 - `src/app/actions/` server actions
 
-## Modelo de dados (v1)
+## Modelo de dados (v2)
+- Note: { id: string, userId: string, title: string, content: BlockNote JSON, parentId: string | null, folder: string | null, favorite: boolean, links: string[] (ids das notas citadas, só do mesmo usuário), createdAt: DateTime, updatedAt: DateTime }
+- User, Account, Session, VerificationToken: tabelas padrão do adapter Prisma do Auth.js; User tem relação 1:N com Note.
+- Os tipos exatos ficam em `prisma/schema.prisma`, que é a fonte da verdade.
+
+## Modelo de dados (v1, só para importação)
 Note: { id: string (nanoid), title: string, content: BlockNote JSON, parentId: string | null, folder: string | null, favorite: boolean, links: string[] (ids das notas citadas), createdAt: number, updatedAt: number }
 
 ## Regras
-- Componentes que usam IndexedDB ou BlockNote são client components ("use client"); o BlockNote deve ser carregado com next/dynamic e ssr: false.
-- Acesso ao banco só por `src/lib/notes.ts`; componentes não chamam o Dexie direto (exceto useLiveQuery via hooks em src/hooks).
+- Componentes que usam BlockNote são client components ("use client"); o BlockNote deve ser carregado com next/dynamic e ssr: false.
+- Acesso ao banco só por `src/server/notes.ts`, chamado a partir de server actions ou route handlers; componentes nunca importam o Prisma.
+- `src/lib/db.ts` e `src/lib/notes.ts` (Dexie) só podem ser usados pela importação das notas da v1.
 - Mobile-first e responsivo (testar em 375px).
 - Acessibilidade: labels, foco visível, contraste AA, navegação por teclado.
 - Não adicionar bibliotecas novas sem perguntar antes. Exceção: zod pode ser instalado. Para cache/sincronização no cliente, propor uma opção antes de instalar.
