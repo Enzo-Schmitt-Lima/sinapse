@@ -15,10 +15,11 @@ import {
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Note } from "@/lib/db";
+import { isTempNoteId, type NoteSummary } from "@/lib/note-types";
 import { useChildNotes } from "@/hooks/useChildNotes";
 import { useFolders } from "@/hooks/useFolders";
-import { createNote, deleteNote, toggleFavorite, updateNote } from "@/lib/notes";
+import { useNoteMutations } from "@/hooks/useNoteMutations";
+import { selectSubtreeIds, useNotes, usePrefetchNote } from "@/hooks/useNotes";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -43,7 +44,7 @@ import {
 import { NewFolderDialog } from "./new-folder-dialog";
 
 interface NoteTreeItemProps {
-  note: Note;
+  note: NoteSummary;
   activeId?: string;
   depth?: number;
   onNavigate?: () => void;
@@ -56,21 +57,29 @@ export function NoteTreeItem({ note, activeId, depth = 0, onNavigate }: NoteTree
   const router = useRouter();
   const children = useChildNotes(note.id);
   const folders = useFolders();
+  const allNotes = useNotes();
+  const prefetchNote = usePrefetchNote();
+  const { createNote, deleteNote, moveToFolder, toggleFavorite } = useNoteMutations();
+  // Nota criada de forma otimista, ainda sem id do servidor.
+  const pending = isTempNoteId(note.id);
   const hasChildren = (children?.length ?? 0) > 0;
   const isActive = note.id === activeId;
   const title = note.title || "Sem título";
 
   async function handleNewSubpage() {
-    const child = await createNote({ parentId: note.id });
     setExpanded(true);
+    const child = await createNote({ parentId: note.id });
+    if (!child) return;
     router.push(`/app/${child.id}`);
     onNavigate?.();
   }
 
-  async function handleDelete() {
-    const deletedIds = await deleteNote(note.id);
+  function handleDelete() {
     setDeleteOpen(false);
-    if (activeId && deletedIds.includes(activeId)) router.push("/app");
+    // Sai da nota aberta na hora se ela estiver sendo excluída (otimista).
+    const affected = selectSubtreeIds(allNotes ?? [], note.id);
+    if (activeId && affected.includes(activeId)) router.push("/app");
+    void deleteNote(note.id);
   }
 
   return (
@@ -97,9 +106,21 @@ export function NoteTreeItem({ note, activeId, depth = 0, onNavigate }: NoteTree
         </button>
 
         <Link
-          href={`/app/${note.id}`}
-          onClick={onNavigate}
-          className="flex min-w-0 flex-1 items-center gap-1.5 rounded-sm py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring md:py-1.5"
+          href={pending ? "#" : `/app/${note.id}`}
+          onClick={(event) => {
+            if (pending) {
+              event.preventDefault();
+              return;
+            }
+            onNavigate?.();
+          }}
+          onMouseEnter={() => !pending && prefetchNote(note.id)}
+          onFocus={() => !pending && prefetchNote(note.id)}
+          aria-disabled={pending || undefined}
+          className={cn(
+            "flex min-w-0 flex-1 items-center gap-1.5 rounded-sm py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring md:py-1.5",
+            pending && "cursor-default opacity-60",
+          )}
           aria-current={isActive ? "page" : undefined}
         >
           <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -110,7 +131,7 @@ export function NoteTreeItem({ note, activeId, depth = 0, onNavigate }: NoteTree
         </Link>
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger asChild disabled={pending}>
             <Button
               variant="ghost"
               size="icon"
@@ -124,7 +145,7 @@ export function NoteTreeItem({ note, activeId, depth = 0, onNavigate }: NoteTree
             <DropdownMenuItem onSelect={handleNewSubpage}>
               <Plus /> Nova subpágina
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => toggleFavorite(note.id)}>
+            <DropdownMenuItem onSelect={() => void toggleFavorite(note.id)}>
               {note.favorite ? <StarOff /> : <Star />}
               {note.favorite ? "Remover dos favoritos" : "Favoritar"}
             </DropdownMenuItem>
@@ -133,11 +154,11 @@ export function NoteTreeItem({ note, activeId, depth = 0, onNavigate }: NoteTree
                 <FolderInput /> Mover para matéria
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
-                <DropdownMenuItem onSelect={() => updateNote(note.id, { folder: null })}>
+                <DropdownMenuItem onSelect={() => void moveToFolder(note.id, null)}>
                   Sem matéria
                 </DropdownMenuItem>
                 {folders?.map((folder) => (
-                  <DropdownMenuItem key={folder} onSelect={() => updateNote(note.id, { folder })}>
+                  <DropdownMenuItem key={folder} onSelect={() => void moveToFolder(note.id, folder)}>
                     {folder}
                   </DropdownMenuItem>
                 ))}
@@ -179,7 +200,7 @@ export function NoteTreeItem({ note, activeId, depth = 0, onNavigate }: NoteTree
       <NewFolderDialog
         open={newFolderOpen}
         onOpenChange={setNewFolderOpen}
-        onCreated={(folder) => updateNote(note.id, { folder })}
+        onCreated={(folder) => void moveToFolder(note.id, folder)}
       />
     </div>
   );

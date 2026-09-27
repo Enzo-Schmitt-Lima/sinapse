@@ -57,6 +57,8 @@ Note: { id: string (nanoid), title: string, content: BlockNote JSON, parentId: s
 - Toda entrada do usuário é validada com zod antes de tocar no banco (tipos, tamanho do título, tamanho do conteúdo).
 - Links [[ ]] só podem apontar para notas do próprio usuário; ids de outras pessoas são descartados ao salvar.
 - Segredos só em variáveis de ambiente; o `.env` nunca vai para o git.
+- Rotas GET de dados do usuário (Route Handlers) respondem sempre com `Cache-Control: private, no-store` — inclusive nas respostas de erro — e são forçadas como dinâmicas (`export const dynamic = "force-dynamic"`). Nada de cache do Next nem da CDN da Vercel para dados de usuário.
+- Ao sair da conta: limpar todo o cache do cliente (`queryClient.clear()`) e descartar as pendências de salvamento que não forem da sessão atual, para a próxima pessoa no mesmo navegador não ver nada da anterior.
 
 ## Identidade visual
 - Estilo limpo e minimalista, referência: Notion / Linear.

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FileText } from "lucide-react";
-import { useNote } from "@/hooks/useNote";
+import { useNoteSummary } from "@/hooks/useNotes";
 
 interface NoteLinkChipProps {
   noteId: string;
@@ -10,7 +10,8 @@ interface NoteLinkChipProps {
 }
 
 export function NoteLinkChip({ noteId, title }: NoteLinkChipProps) {
-  const note = useNote(noteId);
+  // Lista leve da sidebar: não baixa o conteúdo de cada nota linkada.
+  const note = useNoteSummary(noteId);
   const label = (note ? note.title : title) || "Sem título";
 
   // Enquanto carrega, mostra o título salvo no próprio link (sem riscar).
@@ -30,7 +31,7 @@ export function NoteLinkChip({ noteId, title }: NoteLinkChipProps) {
     return (
       <span
         contentEditable={false}
-        title="Esta nota foi excluída"
+        title="Esta nota foi excluída ou não está disponível"
         className="inline-flex items-center gap-1 rounded-md border border-dashed px-1.5 py-0.5 align-baseline text-sm text-muted-foreground line-through"
       >
         <FileText className="h-3.5 w-3.5" aria-hidden="true" />

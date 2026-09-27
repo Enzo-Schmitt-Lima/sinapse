@@ -1,16 +1,12 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import { AppShell } from "@/components/app/app-shell";
+import { ConnectionError } from "@/components/app/connection-error";
+import { getSessionUser } from "@/server/session";
 
 export default async function AppLayout({ children }: LayoutProps<"/app">) {
-  const session = await auth();
-  if (!session?.user) redirect("/login");
+  const check = await getSessionUser();
+  if (check.status === "unavailable") return <ConnectionError />;
+  if (check.status === "signed_out") redirect("/login");
 
-  const user = {
-    name: session.user.name ?? null,
-    email: session.user.email ?? null,
-    image: session.user.image ?? null,
-  };
-
-  return <AppShell user={user}>{children}</AppShell>;
+  return <AppShell user={{ id: check.userId, ...check.user }}>{children}</AppShell>;
 }

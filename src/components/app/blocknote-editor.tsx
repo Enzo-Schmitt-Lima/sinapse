@@ -12,7 +12,7 @@ import { BlockNoteView } from "@blocknote/shadcn";
 import { pt } from "@blocknote/core/locales";
 import type { PartialBlock } from "@blocknote/core";
 import "@blocknote/shadcn/style.css";
-import { createNote, searchNotes } from "@/lib/notes";
+import type { NoteSummary } from "@/lib/note-types";
 import { NOTE_LINK_TYPE } from "@/lib/note-links";
 import { noteSchema } from "./blocknote-schema";
 
@@ -25,11 +25,22 @@ function insertNoteLink(editor: NoteEditorInstance, noteId: string, title: strin
   ]);
 }
 
+type SearchNotes = (query: string) => Promise<NoteSummary[]>;
+type CreateNote = (title: string) => Promise<{ id: string; title: string } | null>;
+
 async function getNoteLinkItems(
   editor: NoteEditorInstance,
   query: string,
+  searchNotes: SearchNotes,
+  createNote: CreateNote,
 ): Promise<DefaultReactSuggestionItem[]> {
-  const notes = await searchNotes(query);
+  let notes: NoteSummary[];
+  try {
+    notes = await searchNotes(query);
+  } catch {
+    // Sem conexão: o menu mostra "Nenhuma nota encontrada" em vez de travar.
+    return [];
+  }
 
   if (notes.length === 0 && query.trim()) {
     return [
@@ -37,8 +48,8 @@ async function getNoteLinkItems(
         title: `Criar nota "${query.trim()}"`,
         icon: <Plus className="h-4 w-4" />,
         onItemClick: async () => {
-          const note = await createNote({ title: query.trim() });
-          insertNoteLink(editor, note.id, note.title);
+          const note = await createNote(query.trim());
+          if (note) insertNoteLink(editor, note.id, note.title);
         },
       },
     ];
@@ -93,9 +104,12 @@ interface BlockNoteEditorProps {
   initialContent: PartialBlock[];
   onChange: (content: PartialBlock[]) => void;
   theme: "light" | "dark";
+  /** Busca no servidor (só notas do usuário) para as sugestões do [[. */
+  searchNotes: SearchNotes;
+  createNote: CreateNote;
 }
 
-export function BlockNoteEditor({ initialContent, onChange, theme }: BlockNoteEditorProps) {
+export function BlockNoteEditor({ initialContent, onChange, theme, searchNotes, createNote }: BlockNoteEditorProps) {
   const editor = useCreateBlockNote({
     schema: noteSchema,
     initialContent: initialContent.length > 0 ? initialContent : undefined,
@@ -112,7 +126,7 @@ export function BlockNoteEditor({ initialContent, onChange, theme }: BlockNoteEd
     >
       <SuggestionMenuController
         triggerCharacter="[["
-        getItems={(query) => getNoteLinkItems(editor, query)}
+        getItems={(query) => getNoteLinkItems(editor, query, searchNotes, createNote)}
         suggestionMenuComponent={NoteLinkSuggestionMenu}
       />
     </BlockNoteView>

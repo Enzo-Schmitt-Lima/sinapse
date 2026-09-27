@@ -5,10 +5,11 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FolderPlus, Plus, Search, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Note } from "@/lib/db";
+import type { NoteSummary } from "@/lib/note-types";
 import { useChildNotes } from "@/hooks/useChildNotes";
 import { useFavorites } from "@/hooks/useFavorites";
-import { createNote } from "@/lib/notes";
+import { useNoteMutations } from "@/hooks/useNoteMutations";
+import { usePrefetchNote } from "@/hooks/useNotes";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -41,10 +42,12 @@ export function SidebarContent({ user, onNavigate, onOpenSearch }: SidebarConten
   const rootNotes = useChildNotes(null);
   const favorites = useFavorites();
   const [newFolderOpen, setNewFolderOpen] = useState(false);
+  const { createNote } = useNoteMutations();
+  const prefetchNote = usePrefetchNote();
 
   const { folderGroups, unfiled } = useMemo(() => {
-    const groups = new Map<string, Note[]>();
-    const rest: Note[] = [];
+    const groups = new Map<string, NoteSummary[]>();
+    const rest: NoteSummary[] = [];
     for (const note of rootNotes ?? []) {
       if (note.folder) {
         const list = groups.get(note.folder) ?? [];
@@ -62,12 +65,14 @@ export function SidebarContent({ user, onNavigate, onOpenSearch }: SidebarConten
 
   async function handleNewNote() {
     const note = await createNote();
+    if (!note) return;
     router.push(`/app/${note.id}`);
     onNavigate?.();
   }
 
   async function handleCreateFolder(folder: string) {
     const note = await createNote({ folder });
+    if (!note) return;
     router.push(`/app/${note.id}`);
     onNavigate?.();
   }
@@ -100,6 +105,8 @@ export function SidebarContent({ user, onNavigate, onOpenSearch }: SidebarConten
                   key={note.id}
                   href={`/app/${note.id}`}
                   onClick={onNavigate}
+                  onMouseEnter={() => prefetchNote(note.id)}
+                  onFocus={() => prefetchNote(note.id)}
                   aria-current={note.id === activeId ? "page" : undefined}
                   className={cn(
                     "flex items-center gap-1.5 truncate rounded-md px-2 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring md:py-1.5",

@@ -1,8 +1,8 @@
 "use client";
 
-import { useLiveQuery } from "dexie-react-hooks";
-import { listFolders } from "@/lib/notes";
+import { selectFolders, useNotes } from "./useNotes";
 
-export function useFolders() {
-  return useLiveQuery(() => listFolders(), []);
+export function useFolders(): string[] | undefined {
+  const notes = useNotes();
+  return notes ? selectFolders(notes) : undefined;
 }

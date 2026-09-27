@@ -3,13 +3,15 @@
 import { useRouter } from "next/navigation";
 import { FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { createNote } from "@/lib/notes";
+import { useNoteMutations } from "@/hooks/useNoteMutations";
 
 export function EmptyState() {
   const router = useRouter();
+  const { createNote } = useNoteMutations();
 
   async function handleCreate() {
     const note = await createNote();
+    if (!note) return;
     router.push(`/app/${note.id}`);
   }
 

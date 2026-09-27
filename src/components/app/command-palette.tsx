@@ -1,12 +1,28 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { FilePlus, FileText, Moon, Sun } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { createNote, searchAllNotes, searchNotes, type NoteSearchResult } from "@/lib/notes";
+import { fetchJson, noteKeys } from "@/lib/api-client";
+import type { NoteSearchResult } from "@/lib/note-types";
+import { useNoteMutations } from "@/hooks/useNoteMutations";
+import { useCurrentUserId } from "./query-provider";
+
+const SEARCH_DELAY_MS = 200;
+
+/** Valor que só muda depois de `delay` ms sem novas alterações. */
+function useDebouncedValue<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timeout = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timeout);
+  }, [value, delay]);
+  return debounced;
+}
 
 interface CommandPaletteProps {
   open: boolean;
@@ -15,8 +31,21 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ open, onOpenChange: setOpen }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<NoteSearchResult[]>([]);
   const router = useRouter();
+  const userId = useCurrentUserId();
+  const { createNote } = useNoteMutations();
+  const debouncedQuery = useDebouncedValue(query.trim(), SEARCH_DELAY_MS);
+
+  // Busca no servidor (só notas do usuário). keepPreviousData mantém a lista
+  // anterior enquanto a nova chega, para não piscar a cada tecla.
+  const { data: results = [] } = useQuery({
+    queryKey: noteKeys.search(userId, debouncedQuery),
+    queryFn: async () =>
+      (await fetchJson<NoteSearchResult[]>(`/api/notes/search?q=${encodeURIComponent(debouncedQuery)}`)) ?? [],
+    enabled: open,
+    placeholderData: keepPreviousData,
+    staleTime: 10_000,
+  });
   const { resolvedTheme, setTheme } = useTheme();
 
   function handleOpenChange(next: boolean) {
@@ -25,11 +54,11 @@ export function CommandPalette({ open, onOpenChange: setOpen }: CommandPalettePr
   }
 
   const handleNewNote = useCallback(async () => {
-    const note = await createNote();
     setOpen(false);
     setQuery("");
-    router.push(`/app/${note.id}`);
-  }, [router, setOpen]);
+    const note = await createNote();
+    if (note) router.push(`/app/${note.id}`);
+  }, [createNote, router, setOpen]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -52,20 +81,6 @@ export function CommandPalette({ open, onOpenChange: setOpen }: CommandPalettePr
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleNewNote, open, setOpen]);
-
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    (async () => {
-      const found = query.trim()
-        ? await searchAllNotes(query)
-        : (await searchNotes("")).map((note): NoteSearchResult => ({ note }));
-      if (!cancelled) setResults(found);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, query]);
 
   function handleSelectNote(noteId: string) {
     handleOpenChange(false);

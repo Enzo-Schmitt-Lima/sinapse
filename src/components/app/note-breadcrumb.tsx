@@ -1,9 +1,9 @@
 import Link from "next/link";
-import type { Note } from "@/lib/db";
+import type { NoteSummary } from "@/lib/note-types";
 
 interface NoteBreadcrumbProps {
-  note: Note;
-  ancestors: Note[];
+  note: Pick<NoteSummary, "title" | "folder">;
+  ancestors: NoteSummary[];
 }
 
 export function NoteBreadcrumb({ note, ancestors }: NoteBreadcrumbProps) {

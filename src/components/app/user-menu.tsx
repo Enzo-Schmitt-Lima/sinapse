@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChevronsUpDown, LogOut } from "lucide-react";
 import { signOutAction } from "@/app/actions/auth";
+import { discardAllSavers, flushAllSavers } from "@/hooks/useAutosave";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export interface SessionUser {
+  id: string;
   name: string | null;
   email: string | null;
   image: string | null;
@@ -38,8 +42,30 @@ function Avatar({ user }: { user: SessionUser }) {
   );
 }
 
+const FLUSH_TIMEOUT_MS = 3000;
+
 export function UserMenu({ user }: { user: SessionUser }) {
   const displayName = user.name ?? user.email ?? "Conta";
+  const queryClient = useQueryClient();
+  const [signingOut, setSigningOut] = useState(false);
+
+  // Nada da sessão pode sobrar para a próxima pessoa no mesmo navegador:
+  // tenta salvar o que está pendente (ainda é desta sessão), descarta o resto,
+  // limpa o cache e recarrega a página do zero.
+  async function handleSignOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    await Promise.race([flushAllSavers(), new Promise((resolve) => setTimeout(resolve, FLUSH_TIMEOUT_MS))]);
+    discardAllSavers();
+    queryClient.clear();
+    try {
+      await signOutAction();
+    } finally {
+      // Navegação completa de propósito: descarta toda a memória da aba.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.assign("/");
+    }
+  }
 
   return (
     <DropdownMenu>
@@ -59,9 +85,9 @@ export function UserMenu({ user }: { user: SessionUser }) {
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer" onSelect={() => void signOutAction()}>
+        <DropdownMenuItem className="cursor-pointer" disabled={signingOut} onSelect={() => void handleSignOut()}>
           <LogOut aria-hidden="true" />
-          Sair
+          {signingOut ? "Saindo…" : "Sair"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
