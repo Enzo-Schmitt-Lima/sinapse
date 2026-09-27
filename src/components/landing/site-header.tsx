@@ -1,7 +1,5 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/app/theme-toggle";
+import { HeaderAuthButton } from "./header-auth-button";
 import { Logo } from "./logo";
 
 const NAV_LINKS = [
@@ -33,12 +31,7 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-1">
           <ThemeToggle />
-          <Button asChild size="sm" className="bg-brand text-brand-foreground hover:bg-brand/90">
-            <Link href="/app">
-              Abrir o app
-              <ArrowRight aria-hidden="true" />
-            </Link>
-          </Button>
+          <HeaderAuthButton />
         </div>
       </div>
     </header>

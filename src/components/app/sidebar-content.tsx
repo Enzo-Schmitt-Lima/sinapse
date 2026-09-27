@@ -16,8 +16,10 @@ import { NoteTreeItem } from "./note-tree-item";
 import { NewFolderDialog } from "./new-folder-dialog";
 import { ThemeToggle } from "./theme-toggle";
 import { ShortcutsDialog } from "./shortcuts-dialog";
+import { UserMenu, type SessionUser } from "./user-menu";
 
 interface SidebarContentProps {
+  user: SessionUser;
   onNavigate?: () => void;
   onOpenSearch: () => void;
 }
@@ -32,7 +34,7 @@ function SidebarSkeleton() {
   );
 }
 
-export function SidebarContent({ onNavigate, onOpenSearch }: SidebarContentProps) {
+export function SidebarContent({ user, onNavigate, onOpenSearch }: SidebarContentProps) {
   const params = useParams<{ noteId?: string }>();
   const activeId = typeof params.noteId === "string" ? params.noteId : undefined;
   const router = useRouter();
@@ -163,7 +165,8 @@ export function SidebarContent({ onNavigate, onOpenSearch }: SidebarContentProps
       </ScrollArea>
 
       <Separator />
-      <div className="flex items-center justify-between p-3">
+      <div className="flex items-center gap-1 p-2">
+        <UserMenu user={user} />
         <ShortcutsDialog />
         <ThemeToggle />
       </div>

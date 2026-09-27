@@ -8,8 +8,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { SidebarContent } from "./sidebar-content";
 import { CommandPalette } from "./command-palette";
 import { DatabaseGate } from "./database-gate";
+import type { SessionUser } from "./user-menu";
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, user }: { children: ReactNode; user: SessionUser }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -30,7 +31,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             collapsed ? "md:w-0 md:overflow-hidden md:border-r-0" : "md:w-72",
           )}
         >
-          <SidebarContent onOpenSearch={openSearch} />
+          <SidebarContent user={user} onOpenSearch={openSearch} />
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
@@ -45,7 +46,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <SheetHeader className="sr-only">
                   <SheetTitle>Menu do Sinapse</SheetTitle>
                 </SheetHeader>
-                <SidebarContent onNavigate={() => setMobileOpen(false)} onOpenSearch={openSearch} />
+                <SidebarContent user={user} onNavigate={() => setMobileOpen(false)} onOpenSearch={openSearch} />
               </SheetContent>
             </Sheet>
             <span className="font-semibold">Sinapse</span>
