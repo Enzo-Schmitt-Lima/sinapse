@@ -15,4 +15,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/login",
     error: "/login",
   },
+  callbacks: {
+    // O callback padrão tira o id do usuário da sessão; as server actions
+    // precisam dele (é a única fonte de userId aceita).
+    session({ session, user }) {
+      return { ...session, user: { ...session.user, id: user.id } };
+    },
+  },
 });
