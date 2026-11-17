@@ -95,7 +95,10 @@ export function SidebarContent({ user, onNavigate, onOpenSearch }: SidebarConten
         </button>
       </div>
 
-      <ScrollArea className="flex-1 px-2">
+      {/* O Radix envolve o conteúdo numa div com display: table, que cresce com
+          o título mais longo e corta o lado direito; block mantém a largura da
+          sidebar e faz o truncate funcionar. */}
+      <ScrollArea className="flex-1 px-2 [&>[data-slot=scroll-area-viewport]>div]:!block">
         {favorites && favorites.length > 0 && (
           <div className="mb-4">
             <p className="px-2 py-1 text-xs font-medium uppercase text-muted-foreground">Favoritos</p>
