@@ -1,7 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { NOTE_LIMIT, contentSchema, createNoteSchema, titleSchema, updateNoteSchema } from "@/lib/note-schemas";
+import {
+  NOTE_LIMIT,
+  contentSchema,
+  createNoteSchema,
+  importNotesSchema,
+  titleSchema,
+  updateNoteSchema,
+} from "@/lib/note-schemas";
 import {
   InvalidParentError,
   NoteLimitError,
@@ -11,6 +18,7 @@ import {
   deleteNote,
   getBacklinks,
   getNote,
+  importNotes,
   listFolders,
   listNotes,
   searchNotes,
@@ -186,5 +194,74 @@ describe("validação e limites", () => {
     expect(() => assertBelowNoteLimit(NOTE_LIMIT - 1)).not.toThrow();
     expect(() => assertBelowNoteLimit(NOTE_LIMIT)).toThrow(NoteLimitError);
     expect(() => assertBelowNoteLimit(3, 3)).toThrow("Você chegou ao limite de 3 notas");
+  });
+});
+
+describe("importação das notas da v1", () => {
+  function localNote(id: string, parentId: string | null, content: unknown[] = []) {
+    return {
+      id,
+      title: `Local ${id} ${run}`,
+      content,
+      parentId,
+      folder: "Cálculo I",
+      favorite: id === "raiz",
+      createdAt: Date.UTC(2026, 0, 1),
+      updatedAt: Date.UTC(2026, 0, 2),
+    };
+  }
+
+  it("importa árvore e links com ids novos, só para o usuário da sessão", async () => {
+    const before = await prisma.note.count({ where: { userId: userA } });
+    const input = importNotesSchema.parse({
+      notes: [
+        localNote("raiz", null, [linkTo("neta"), linkTo(noteB)]),
+        localNote("filha", "raiz"),
+        localNote("neta", "filha", [linkTo("raiz")]),
+      ],
+    });
+
+    expect(await importNotes(userA, input)).toEqual({ imported: 3 });
+
+    const imported = await prisma.note.findMany({ where: { title: { endsWith: run, startsWith: "Local " } } });
+    expect(imported).toHaveLength(3);
+    expect(imported.every((note) => note.userId === userA)).toBe(true);
+    expect(await prisma.note.count({ where: { userId: userA } })).toBe(before + 3);
+
+    const byLocal = new Map(imported.map((note) => [note.title.split(" ")[1], note]));
+    const raiz = byLocal.get("raiz")!;
+    const filha = byLocal.get("filha")!;
+    const neta = byLocal.get("neta")!;
+    expect(["raiz", "filha", "neta"]).not.toContain(raiz.id);
+    expect(filha.parentId).toBe(raiz.id);
+    expect(neta.parentId).toBe(filha.id);
+    // O id da nota de B (que nem estava no lote) não vira link.
+    expect(raiz.links).toEqual([neta.id]);
+    expect(neta.links).toEqual([raiz.id]);
+    expect(raiz.favorite).toBe(true);
+    expect(raiz.createdAt).toEqual(new Date(Date.UTC(2026, 0, 1)));
+    expect(raiz.updatedAt).toEqual(new Date(Date.UTC(2026, 0, 2)));
+    expect((await getBacklinks(userA, raiz.id)).map((note) => note.id)).toEqual([neta.id]);
+  });
+
+  it("acima do limite de notas, nada é importado", async () => {
+    const before = await prisma.note.count({ where: { userId: userA } });
+    const notes = Array.from({ length: NOTE_LIMIT - before + 1 }, (_, index) => localNote(`n${index}`, null));
+    await expect(importNotes(userA, importNotesSchema.parse({ notes }))).rejects.toBeInstanceOf(NoteLimitError);
+    expect(await prisma.note.count({ where: { userId: userA } })).toBe(before);
+  });
+
+  it("valida cada nota com os limites de título e conteúdo e recusa campos extras", () => {
+    const longTitle = importNotesSchema.safeParse({ notes: [{ ...localNote("a", null), title: "a".repeat(201) }] });
+    expect(longTitle.success).toBe(false);
+    expect(longTitle.error?.issues[0].path).toEqual(["notes", 0, "title"]);
+
+    const bigContent = importNotesSchema.safeParse({
+      notes: [localNote("a", null, [paragraph("x".repeat(210 * 1024))])],
+    });
+    expect(bigContent.success).toBe(false);
+
+    expect(importNotesSchema.safeParse({ notes: [{ ...localNote("a", null), userId: userB }] }).success).toBe(false);
+    expect(importNotesSchema.safeParse({ notes: [localNote("a", null), localNote("a", null)] }).success).toBe(false);
   });
 });

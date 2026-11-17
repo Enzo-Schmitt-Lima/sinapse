@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronsUpDown, LogOut } from "lucide-react";
+import { ChevronsUpDown, LogOut, Settings } from "lucide-react";
 import { signOutAction } from "@/app/actions/auth";
 import { discardAllSavers, flushAllSavers } from "@/hooks/useAutosave";
 import {
@@ -44,7 +45,7 @@ function Avatar({ user }: { user: SessionUser }) {
 
 const FLUSH_TIMEOUT_MS = 3000;
 
-export function UserMenu({ user }: { user: SessionUser }) {
+export function UserMenu({ user, onNavigate }: { user: SessionUser; onNavigate?: () => void }) {
   const displayName = user.name ?? user.email ?? "Conta";
   const queryClient = useQueryClient();
   const [signingOut, setSigningOut] = useState(false);
@@ -58,6 +59,11 @@ export function UserMenu({ user }: { user: SessionUser }) {
     await Promise.race([flushAllSavers(), new Promise((resolve) => setTimeout(resolve, FLUSH_TIMEOUT_MS))]);
     discardAllSavers();
     queryClient.clear();
+    try {
+      sessionStorage.clear();
+    } catch {
+      // Sem armazenamento disponível: nada a limpar.
+    }
     try {
       await signOutAction();
     } finally {
@@ -85,6 +91,12 @@ export function UserMenu({ user }: { user: SessionUser }) {
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild className="cursor-pointer">
+          <Link href="/app/configuracoes" onClick={onNavigate}>
+            <Settings aria-hidden="true" />
+            Configurações
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem className="cursor-pointer" disabled={signingOut} onSelect={() => void handleSignOut()}>
           <LogOut aria-hidden="true" />
           {signingOut ? "Saindo…" : "Sair"}

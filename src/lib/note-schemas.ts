@@ -70,5 +70,42 @@ export const searchQuerySchema = z
   .string({ error: "Busca inválida." })
   .max(NOTE_SEARCH_MAX, `A busca pode ter no máximo ${NOTE_SEARCH_MAX} caracteres.`);
 
+// Importação das notas da v1 (IndexedDB). O id é o local (nanoid), usado só
+// para remapear pais e links; `links` não é aceito: o servidor recalcula.
+// Datas em milissegundos, como a v1 guardava.
+const MIN_TIMESTAMP = Date.UTC(2020, 0, 1);
+const timestampSchema = z
+  .number({ error: INVALID_DATA })
+  .int(INVALID_DATA)
+  .min(MIN_TIMESTAMP, INVALID_DATA)
+  .refine((value) => value <= Date.now() + 24 * 60 * 60 * 1000, INVALID_DATA);
+
+export const importedNoteSchema = z.strictObject(
+  {
+    id: noteIdSchema,
+    title: titleSchema,
+    content: contentSchema,
+    parentId: parentIdSchema,
+    folder: folderSchema,
+    favorite: z.boolean({ error: INVALID_DATA }),
+    createdAt: timestampSchema,
+    updatedAt: timestampSchema,
+  },
+  { error: INVALID_DATA },
+);
+
+export const importNotesSchema = z
+  .strictObject(
+    {
+      notes: z
+        .array(importedNoteSchema, { error: INVALID_DATA })
+        .min(1, "Não há notas para importar.")
+        .max(NOTE_LIMIT, `Dá para importar no máximo ${NOTE_LIMIT.toLocaleString("pt-BR")} notas.`),
+    },
+    { error: INVALID_DATA },
+  )
+  .refine(({ notes }) => new Set(notes.map((note) => note.id)).size === notes.length, INVALID_DATA);
+
 export type CreateNoteInput = z.output<typeof createNoteSchema>;
 export type NotePatch = z.output<typeof updateNoteSchema>;
+export type ImportNotesInput = z.output<typeof importNotesSchema>;

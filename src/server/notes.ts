@@ -1,11 +1,14 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
+
 import type { PartialBlock } from "@blocknote/core";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { buildSnippet, extractPlainText } from "@/lib/note-content";
 import { extractNoteLinks } from "@/lib/note-links";
-import { NOTE_LIMIT, type CreateNoteInput, type NotePatch } from "@/lib/note-schemas";
+import { remapImportedNotes } from "@/lib/note-import";
+import { NOTE_LIMIT, type CreateNoteInput, type ImportNotesInput, type NotePatch } from "@/lib/note-schemas";
 
 // Acesso às notas no servidor. Regras (CLAUDE.md, "Segurança"):
 // - userId é sempre o 1º parâmetro e vem da sessão, nunca do cliente;
@@ -24,8 +27,8 @@ export class NoteNotFoundError extends NoteError {
 }
 
 export class NoteLimitError extends NoteError {
-  constructor(limit: number) {
-    super(`Você chegou ao limite de ${limit.toLocaleString("pt-BR")} notas. Exclua algumas para criar novas.`);
+  constructor(limit: number, message?: string) {
+    super(message ?? `Você chegou ao limite de ${limit.toLocaleString("pt-BR")} notas. Exclua algumas para criar novas.`);
     this.name = "NoteLimitError";
   }
 }
@@ -162,6 +165,39 @@ export async function deleteNote(userId: string, id: string): Promise<string[]> 
   const { count } = await prisma.note.deleteMany({ where: { id, userId } });
   if (count === 0) throw new NoteNotFoundError();
   return deletedIds;
+}
+
+const IMPORT_TIMEOUT_MS = 20_000;
+
+/**
+ * Importa as notas da v1 numa única transação: ids novos, parentId e chips
+ * [[ ]] remapeados, tudo do usuário da sessão. Se algo falhar, nada fica.
+ */
+export async function importNotes(userId: string, input: ImportNotesInput): Promise<{ imported: number }> {
+  const notes = remapImportedNotes(input.notes, randomUUID);
+
+  return prisma.$transaction(
+    async (tx) => {
+      const current = await tx.note.count({ where: { userId } });
+      if (current + notes.length > NOTE_LIMIT) {
+        throw new NoteLimitError(
+          NOTE_LIMIT,
+          `Importar ${notes.length.toLocaleString("pt-BR")} notas passaria do limite de ${NOTE_LIMIT.toLocaleString("pt-BR")} notas da conta. Nada foi importado.`,
+        );
+      }
+      // Em ordem (pais primeiro): a chave estrangeira de parentId vale mesmo
+      // se o Prisma dividir o insert em lotes.
+      const { count } = await tx.note.createMany({
+        data: notes.map((note) => ({
+          ...note,
+          userId,
+          content: note.content as Prisma.InputJsonValue,
+        })),
+      });
+      return { imported: count };
+    },
+    { timeout: IMPORT_TIMEOUT_MS, maxWait: IMPORT_TIMEOUT_MS },
+  );
 }
 
 export async function toggleFavorite(userId: string, id: string): Promise<boolean> {

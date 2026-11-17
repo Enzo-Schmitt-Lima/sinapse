@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { Menu, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,9 @@ import { CommandPalette } from "./command-palette";
 import { QueryProvider } from "./query-provider";
 import { ToastProvider } from "./app-toast";
 import type { SessionUser } from "./user-menu";
+
+// Só no navegador: lê o IndexedDB da v1 (Dexie fica fora do bundle principal).
+const LocalImportPrompt = dynamic(() => import("./local-import-prompt"), { ssr: false });
 
 export function AppShell({ children, user }: { children: ReactNode; user: SessionUser }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -73,6 +77,7 @@ export function AppShell({ children, user }: { children: ReactNode; user: Sessio
           </div>
 
           <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
+          <LocalImportPrompt />
         </div>
       </ToastProvider>
     </QueryProvider>

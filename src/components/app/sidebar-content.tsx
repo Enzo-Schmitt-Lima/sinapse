@@ -173,7 +173,7 @@ export function SidebarContent({ user, onNavigate, onOpenSearch }: SidebarConten
 
       <Separator />
       <div className="flex items-center gap-1 p-2">
-        <UserMenu user={user} />
+        <UserMenu user={user} onNavigate={onNavigate} />
         <ShortcutsDialog />
         <ThemeToggle />
       </div>
